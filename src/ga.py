@@ -7,16 +7,19 @@ import random
 from izhikevich_nn import IzhikevichNetwork
 
 class GeneticAlgorithm:
-    def __init__(self, population_size, mutation_rate, elitism_rate, num_generations, num_excitatory, network_size, fitness_function):
+    def __init__(self, population_size, mutation_rate, elitism_rate, num_generations, network_size, num_excitatory, fitness_function):
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.elitism_rate = elitism_rate
         self.num_generations = num_generations
-        self.num_excitatory = num_excitatory
         self.network_size = network_size
+        self.num_excitatory = num_excitatory
         self.fitness_function = fitness_function
         self.population = [self.create_network() for _ in range(population_size)]
         self.fitness_scores = np.zeros(population_size)
+        self.best_network = None
+        self.best_V_history = None  # history of membrane potentials
+        self.best_fitness_scores = []  # Track best fitness score over time
 
     def create_network(self):
         network = IzhikevichNetwork(self.network_size)
@@ -24,11 +27,16 @@ class GeneticAlgorithm:
         return network
 
     def evaluate_population(self):
-        self.fitness_scores = np.array([self.fitness_function(network) for network in self.population])
+        results = [self.fitness_function(network) for network in self.population]
+        self.fitness_scores, voltage_histories = zip(*results)
+
+        # Find the network with the best fitness score and save its voltage history
+        best_index = np.argmax(self.fitness_scores)
+        self.best_V_history = voltage_histories[best_index]
 
     def select_best_networks(self):
         elite_count = int(self.population_size * self.elitism_rate)
-        best_indices = np.argsort(-self.fitness_scores)[:elite_count]
+        best_indices = np.argsort(-np.array(self.fitness_scores))[:elite_count]
         return [self.population[i] for i in best_indices]
 
     def mutate_network(self, network):
@@ -65,14 +73,15 @@ class GeneticAlgorithm:
             self.evaluate_population()
             best_networks = self.select_best_networks()
             self.population = self.generate_new_population(best_networks)
+            self.best_fitness_scores.append(max(self.fitness_scores))
 
             if callback:
                 callback()
 
         # Evaluate the final population and return the best network
         self.evaluate_population()
-        best_network = self.select_best_networks()[0]
-        return best_network
+        self.best_network = self.select_best_networks()[0]
+        return self.best_network
 
 # In the main simulation file:
 # Define the fitness function and create the GA instance

@@ -67,6 +67,7 @@ class IzhikevichNetwork:
 
     def step(self, dt, inputs):
         self.Inputs += inputs
+        #print("Inputs at start", self.Inputs)
         # Update state
         # Computing change in membrane potential based on Izhikevich equation
         dVdt = (0.04 * (self.Voltages**2)) + (5 * self.Voltages) + 140.0 - self.u + self.Inputs
@@ -84,4 +85,5 @@ class IzhikevichNetwork:
         self.u = self.u + self.d * self.Firing
         # Prepare synaptic input for next step
         self.Inputs = np.dot(self.Weights, self.Firing) ### Check if it should be .T or not
+        #print("Inputs after step",self.Inputs)
         #print(self.Weights, firing, self.Inputs)
